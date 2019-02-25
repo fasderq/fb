@@ -1,4 +1,3 @@
-import './style';
 import { Component } from 'preact';
 import fetch from 'isomorphic-unfetch'
 const url = require('url')
