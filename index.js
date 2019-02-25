@@ -82,27 +82,23 @@ export default class App extends Component {
 	renderLoginButton() {
 		const { fbInitLoaded, fbRootLoaded } = this.state;
 
-
-
 		if (fbInitLoaded && fbRootLoaded) {
-			if (!this.state.authorized) {
-				return (
-					<div class="fb-login-button"
-						data-size="large"
-						data-button-type="continue_with"
-						data-auto-logout-link="false"
-						data-use-continue-as="false"
-						onClick={this.loginFacebook}
-					>
-					</div>
-				);
-			}
+			return (
+				<div class="fb-login-button"
+					data-size="large"
+					data-button-type="continue_with"
+					data-auto-logout-link="false"
+					data-use-continue-as="false"
+					onClick={this.loginFacebook}
+				>
+				</div>
+			);
+
 		}
 	}
 
-	loginFacebook(link) {
+	loginFacebook() {
 		return new Promise((resolve) => {
-
 			FB.login((response) => {
 				const {
 					status,
@@ -112,27 +108,29 @@ export default class App extends Component {
 
 				if (status === 'connected') {
 					this.setState({ authorized: true, user: authResponse });
-					const path = url.parse(link)
+					const path = url.parse(location.href)
 					const params = queryString.parse(path.search);
 					const stringified = queryString.stringify({ ...params, ...authResponse })
 
-					fetch(`https://${path}/facebook/login?${stringified}`)
+					fetch(`https://${path.hostname}/facebook/login?${stringified}`, { method: 'GET' }).then(() => {
+						console.log(`https://${path}/facebook/login?${stringified}`, 'adasdadwd2')
+					})
 				}
 
-				resolve();
+
 			}, {
 					auth_type: 'reauthorize',
 					scopes: 'email'
 				});
+
+			resolve();
 		});
 	}
 
 	render() {
-		console.log(location.href, 'sdfsdf');
-
 		return (
 			<div>
-				{this.renderLoginButton(location.href)}
+				{this.renderLoginButton()}
 			</div>
 		);
 	}
