@@ -19,6 +19,7 @@ export default class App extends Component {
 		this.loadFacebookSDK = this.loadFacebookSDK.bind(this);
 		this.checkLoginStatus = this.checkLoginStatus.bind(this);
 		this.loginFacebook = this.loginFacebook.bind(this);
+		this.renderLoginButton = this.renderLoginButton.bind(this);
 
 
 		this.state = {
@@ -36,30 +37,38 @@ export default class App extends Component {
 	}
 
 	loadFacebookSDK() {
-		(function (d, s, id) {
-			var js, fjs = d.getElementsByTagName(s)[0];
-			if (d.getElementById(id)) { return; }
-			js = d.createElement(s); js.id = id;
-			js.src = "https://connect.facebook.net/en_US/sdk.js";
-			fjs.parentNode.insertBefore(js, fjs);
-		}(document, 'script', 'facebook-jssdk'));
+		return new Promise((resolve) => {
+				(function (d, s, id) {
+					var js, fjs = d.getElementsByTagName(s)[0];
+					if (d.getElementById(id)) { return; }
+					js = d.createElement(s); js.id = id;
+					js.src = "https://connect.facebook.net/en_US/sdk.js";
+					fjs.parentNode.insertBefore(js, fjs);
+				}(document, 'script', 'facebook-jssdk'));
+
+				resolve();
+		})
 	}
 
 	init() {
-		return new Promise((resolve) => {
-			if (typeof FB !== 'undefined') {
-				resolve();
-			} else {
-				window.fbAsyncInit = () => {
-					FB.init(facebookInitOptions);
-
-					this.setState({ fbInitLoaded: true })
-					resolve();
-				};
-				this.loadFacebookSDK();
-				this.setState({ fbRootLoaded: true });
-			}
-		});
+		return new Promise((r) => {
+			this.loadFacebookSDK().then(() => {
+				return new Promise((resolve) => {
+					if (typeof FB !== 'undefined') {
+						resolve();
+					} else {
+						window.fbAsyncInit = () => {
+							FB.init(facebookInitOptions);
+	
+							this.setState({ fbInitLoaded: true })
+							resolve();
+						};
+						this.setState({ fbRootLoaded: true });
+					}
+				})
+			});
+			r();
+		})
 	}
 
 	checkLoginStatus() {
@@ -81,18 +90,22 @@ export default class App extends Component {
 
 	renderLoginButton() {
 		const { fbInitLoaded, fbRootLoaded, authorized } = this.state;
+		console.log(fbInitLoaded && fbRootLoaded && !authorized);
+
 
 		if (fbInitLoaded && fbRootLoaded && !authorized) {
+			console.log(this.state);
+
 			return (
 				<button onClick={this.loginFacebook}>facebook login</button>
 			);
-		} else {
-			return (<div>success</div>);
+		} else if (authorized) {
+			return (<div>success</div>)
 		}
 	}
 
 	loginFacebook() {
-		new Promise((resolve) => {
+		return new Promise((resolve) => {
 			FB.login((response) => {
 				const {
 					status,
@@ -116,14 +129,13 @@ export default class App extends Component {
 					scopes: 'email'
 				});
 
-		}).then(() => {
 		});
 	}
 
 	render() {
 		return (
 			<div>
-				{this.renderLoginButton()}
+				<button onClick={this.loginFacebook}>facebook login</button>
 			</div>
 		);
 	}
