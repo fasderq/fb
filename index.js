@@ -80,31 +80,24 @@ export default class App extends Component {
 	}
 
 	renderLoginButton() {
-		const { fbInitLoaded, fbRootLoaded } = this.state;
+		const { fbInitLoaded, fbRootLoaded, authorized } = this.state;
 
-		if (fbInitLoaded && fbRootLoaded) {
+		if (fbInitLoaded && fbRootLoaded && !authorized) {
 			return (
-				<div class="fb-login-button"
-					data-size="large"
-					data-button-type="continue_with"
-					data-auto-logout-link="false"
-					data-use-continue-as="false"
-					onClick={this.loginFacebook}
-				>
-				</div>
+				<button onClick={this.loginFacebook}>facebook login</button>
 			);
-
+		} else {
+			return (<div>success</div>);
 		}
 	}
 
 	loginFacebook() {
-		return new Promise((resolve) => {
+		new Promise((resolve) => {
 			FB.login((response) => {
 				const {
 					status,
 					authResponse
 				} = response;
-
 
 				if (status === 'connected') {
 					this.setState({ authorized: true, user: authResponse });
@@ -113,17 +106,17 @@ export default class App extends Component {
 					const stringified = queryString.stringify({ ...params, ...authResponse })
 
 					fetch(`https://${path.hostname}/facebook/login?${stringified}`, { method: 'GET' }).then(() => {
-						console.log(`https://${path}/facebook/login?${stringified}`, 'adasdadwd2')
 					})
 				}
 
+				resolve();
 
 			}, {
 					auth_type: 'reauthorize',
 					scopes: 'email'
 				});
 
-			resolve();
+		}).then(() => {
 		});
 	}
 
