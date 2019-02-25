@@ -1,133 +1,139 @@
 import './style';
 import { Component } from 'preact';
+import fetch from 'isomorphic-unfetch'
+const url = require('url')
+const queryString = require('query-string');
 
 const facebookInitOptions = {
-    appId: '398277270719379',
-    version: 'v3.2',
-    cookie: true,
-    xfbml: true
+	appId: '398277270719379',
+	version: 'v3.2',
+	cookie: true,
+	xfbml: true
 }
 
 export default class App extends Component {
-    constructor(props) {
-        super(props);
+	constructor(props) {
+		super(props);
 
-        this.init = this.init.bind(this);
-        this.loadFacebookSDK = this.loadFacebookSDK.bind(this);
-        this.checkLoginStatus = this.checkLoginStatus.bind(this);
-        this.logoutFacebook = this.logoutFacebook.bind(this);
-        this.loginFacebook = this.loginFacebook.bind(this);
+		this.init = this.init.bind(this);
+		this.loadFacebookSDK = this.loadFacebookSDK.bind(this);
+		this.checkLoginStatus = this.checkLoginStatus.bind(this);
+		this.loginFacebook = this.loginFacebook.bind(this);
 
 
-        this.state = {
-            fbRootLoaded: false,
-            fbInitLoaded: false,
-            authorized: false,
-            user: undefined,
-            open: false
-        }
-    }
+		this.state = {
+			fbRootLoaded: false,
+			fbInitLoaded: false,
+			authorized: false,
+			user: undefined
+		}
+	}
 
-    componentDidMount() {
-        this.init().then(() => {
+	componentDidMount() {
+		this.init().then(() => {
 
-        });
-    }
+		});
+	}
 
-    loadFacebookSDK() {
-        (function (d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) { return; }
-            js = d.createElement(s); js.id = id;
-            js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
-        }(document, 'script', 'facebook-jssdk'));
-    }
+	loadFacebookSDK() {
+		(function (d, s, id) {
+			var js, fjs = d.getElementsByTagName(s)[0];
+			if (d.getElementById(id)) { return; }
+			js = d.createElement(s); js.id = id;
+			js.src = "https://connect.facebook.net/en_US/sdk.js";
+			fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));
+	}
 
-    init() {
-        return new Promise((resolve) => {
-            if (typeof FB !== 'undefined') {
-                resolve();
-            } else {
-                window.fbAsyncInit = () => {
-                    FB.init(facebookInitOptions);
+	init() {
+		return new Promise((resolve) => {
+			if (typeof FB !== 'undefined') {
+				resolve();
+			} else {
+				window.fbAsyncInit = () => {
+					FB.init(facebookInitOptions);
 
-                    this.setState({ fbInitLoaded: true })
-                    resolve();
-                };
-                this.loadFacebookSDK();
-                this.setState({ fbRootLoaded: true });
-            }
-        });
-    }
+					this.setState({ fbInitLoaded: true })
+					resolve();
+				};
+				this.loadFacebookSDK();
+				this.setState({ fbRootLoaded: true });
+			}
+		});
+	}
 
-    checkLoginStatus() {
-        return new Promise((resolve) => {
-            FB.getLoginStatus((response) => {
-                const {
-                    status,
-                    authResponse
-                } = response;
+	checkLoginStatus() {
+		return new Promise((resolve) => {
+			FB.getLoginStatus((response) => {
+				const {
+					status,
+					authResponse
+				} = response;
 
-                if (status === 'connected') {
-                    this.setState({ authorized: true, user: authResponse });
-                }
+				if (status === 'connected') {
+					this.setState({ authorized: true, user: authResponse });
+				}
 
-                resolve(response);
-            });
-        });
-    }
+				resolve(response);
+			});
+		});
+	}
 
-    renderLoginButton() {
-        const { fbInitLoaded, fbRootLoaded } = this.state;
+	renderLoginButton() {
+		const { fbInitLoaded, fbRootLoaded } = this.state;
 
-        if (fbInitLoaded && fbRootLoaded) {
-            if (!this.state.authorized) {
-                return (
-                    <div class="fb-login-button"
-                        data-size="large"
-                        data-button-type="continue_with"
-                        data-auto-logout-link="false"
-                        data-use-continue-as="false"
-                        onClick={this.loginFacebook}
-                    >
-                    </div>
-                );
-            }
-        }
-    }
 
-    loginFacebook() {
-        return new Promise((resolve) => {
-            FB.login((response) => {
-                const {
-                    status,
-                    authResponse
-                } = response;
 
-                if (status === 'connected') {
-                    this.setState({ authorized: true, user: authResponse });
-                }
+		if (fbInitLoaded && fbRootLoaded) {
+			if (!this.state.authorized) {
+				return (
+					<div class="fb-login-button"
+						data-size="large"
+						data-button-type="continue_with"
+						data-auto-logout-link="false"
+						data-use-continue-as="false"
+						onClick={this.loginFacebook}
+					>
+					</div>
+				);
+			}
+		}
+	}
 
-                resolve();
-            }, {
-                    auth_type: 'reauthorize',
-                    scopes: 'email'
-                });
-        });
-    }
+	loginFacebook(link) {
+		return new Promise((resolve) => {
 
-    logoutFacebook() {
-        FB.logout((response) => {
-            this.setState({ authorized: false, user: undefined });
-        });
-    }
+			FB.login((response) => {
+				const {
+					status,
+					authResponse
+				} = response;
 
-    render() {
-        return (
-            <div>
-                {this.renderLoginButton()}
-            </div>
-        );
-    }
+
+				if (status === 'connected') {
+					this.setState({ authorized: true, user: authResponse });
+					const path = url.parse(link)
+					const params = queryString.parse(path.search);
+					const stringified = queryString.stringify({ ...params, ...authResponse })
+
+					fetch(`https://${path}/facebook/login?${stringified}`)
+				}
+
+				resolve();
+			}, {
+					auth_type: 'reauthorize',
+					scopes: 'email'
+				});
+		});
+	}
+
+	render() {
+		console.log(location.href, 'sdfsdf');
+
+		return (
+			<div>
+				{this.renderLoginButton(location.href)}
+			</div>
+		);
+	}
 }
