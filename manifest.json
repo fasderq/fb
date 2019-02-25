@@ -1,7 +1,7 @@
 {
   "name": "fb",
   "short_name": "fb",
-  "start_url": "/",
+  "start_url": "/public/facebook/login",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fff",
